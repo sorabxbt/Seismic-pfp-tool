@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seismic Creator — Ultimate Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-deep: #030712;
+            --glass-panel: rgba(17, 24, 39, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.03);
+            
+            --accent-primary: #60a5fa;
+            --accent-glow: rgba(96, 165, 250, 0.4);
+            
+            --text-bright: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-bright);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            /* Animated Background */
+            background: radial-gradient(circle at top center, #1e293b, #020617 80%);
+            background-attachment: fixed;
+        }
+        
+        /* Subtle animated mesh/noise background overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/rect%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* --- CUSTOM SCROLLBAR (Minimalist) --- */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+        /* --- ULTRA GLASS PANELS --- */
+        .glass-panel {
+            position: relative;
+            background: var(--glass-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+            z-index: 1;
+        }
+        
+        /* --- CANVAS STAGE --- */
+        .canvas-wrapper {
+            position: relative;
+            padding: 4px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01));
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8);
+            transition: transform 0.3s ease;
+        }
+        .canvas-wrapper:hover { transform: translateY(-2px); box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.9); }
+
+        #studioCanvas {
+            /* Checkerboard pattern for transparency */
+            background-image: 
+                linear-gradient(45deg, #111827 25%, transparent 25%), 
+                linear-gradient(-45deg, #111827 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #111827 75%), 
+                linear-gradient(-45deg, transparent 75%, #111827 75%);
+            background-size: 24px 24px;
+            background-position: 0 0, 0 12px, 12px -12px, -12px 0px; 
+            background-color: #030712;
+            width: 420px; height: 420px; 
+            max-width: 90vw; max-height: 90vh; 
+            display: block; border-radius: 14px; 
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        /* --- BUTTONS (Neumorphic / Glow) --- */
+        .btn-base {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 0.65rem 1.2rem;
+            font-weight: 500; font-size: 0.9rem;
+            border-radius: 10px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            cursor: pointer; user-select: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.2);
+        }
+        .btn-primary:active { transform: translateY(1px); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-bright);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Utility Buttons (Small) */
+        .btn-icon {
+            padding: 6px; width: 28px; height: 28px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            background: transparent; color: var(--text-dim);
+            transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+        .btn-icon:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: white; }
+        .btn-icon:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* --- PACKS (Grid) --- */
+        .packs-container {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+        }
+        .pack-card {
+            background: linear-gradient(145deg, rgba(30,41,59,0.4), rgba(15,23,42,0.4));
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .pack-card:hover {
+            background: rgba(30,41,59,0.6);
+            border-color: var(--accent-primary);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px -5px rgba(0,0,0,0.5);
+        }
+        .pack-card img {
+            width: 48px; height: 48px; object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+            transition: transform 0.3s ease;
+        }
+        .pack-card:hover img { transform: scale(1.1) rotate(3deg); }
+        .pack-title { font-size: 0.85rem; font-weight: 600; color: var(--text-dim); transition: color 0.2s; }
+        .pack-card:hover .pack-title { color: white; }
+
+        /* Stickers Grid */
+        .sticker-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .sticker-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            aspect-ratio: 1;
+            padding: 12px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sticker-item:hover {
+            background: rgba(255,255,255,0.03);
+            border-color: var(--accent-primary);
+            transform: scale(1.03);
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.1);
+        }
+        .sticker-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+
+        /* Back Button */
+        .nav-back {
+            display: flex; align-items: center; gap: 8px;
+            width: 100%; margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .btn-back {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 6px 12px; border-radius: 8px;
+            color: var(--text-dim); font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .btn-back:hover { background: rgba(255,255,255,0.08); color: white; border-color: rgba(255,255,255,0.15); }
+
+        /* --- MODERN SLIDERS --- */
+        .control-group { margin-bottom: 16px; }
+        .control-header { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; letter-spacing: 0.03em; text-transform: uppercase;}
+        
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; height: 24px; cursor: pointer; margin: 0;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; transition: background 0.2s;
+        }
+        input[type=range]:hover::-webkit-slider-runnable-track { background: rgba(255,255,255,0.15); }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: white; border: 2px solid var(--accent-primary);
+            margin-top: -6px; /* center thumb */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.1); box-shadow: 0 0 10px var(--accent-glow); }
+        
+        /* --- LAYER ITEMS --- */
+        .layer-list { display: flex; flex-direction: column; gap: 4px; }
+        .layer-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 10px; border-radius: 8px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .layer-row:hover { background: rgba(255,255,255,0.03); }
+        
+        .layer-row.active {
+            background: linear-gradient(90deg, rgba(96,165,250,0.1), transparent);
+            border-left-color: var(--accent-primary);
+        }
+        
+        .layer-row.erasing {
+            background: linear-gradient(90deg, rgba(239,68,68,0.1), transparent);
+            border-left-color: #ef4444;
+        }
+
+        /* Circular Slider Wrapper */
+        .slider-wrapper { 
+            margin-top: 2rem; 
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.2), transparent);
+            padding: 10px 0;
+        }
+        
+        @media (max-width: 1024px) { .packs-container { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 640px) { .packs-container { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- STICKY HEADER -->
+    <header class="fixed top-0 w-full z-30 border-b border-white/5 bg-black/40 backdrop-blur-xl">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-center md:justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full border border-white/10 overflow-hidden shadow-lg">
+                    <img src="/mnt/data/2763b34c-c7f0-4396-a234-b3fb9f26817f.png" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/40x40'">
+                </div>
+                <h1 class="text-sm md:text-base font-medium text-gray-200">
+                    Seismic <span class="text-blue-400 font-bold">Creator</span>
+                </h1>
+            </div>
+            <div class="hidden md:flex items-center gap-4 text-xs text-gray-500 font-medium">
+                <span>MADE BY SORABXBT</span>
+                <a href="https://x.com/sorabxbt" target="_blank" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-blue-500/20 hover:text-blue-400 transition-colors">Follow on X</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN LAYOUT -->
+    <main class="pt-20 pb-8 px-4 flex-grow w-full max-w-[1500px] mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr_300px] gap-6 items-start">
+
+        <!-- LEFT PANEL: ASSETS -->
+        <aside class="glass-panel rounded-2xl p-5 h-[500px] lg:h-[calc(100vh-120px)] flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Library</h2>
+                <span class="text-[10px] bg-white/5 px-2 py-0.5 rounded text-gray-400">Free</span>
+            </div>
+            
+            <!-- Pack Content Area -->
+            <div id="packsArea" class="flex-grow overflow-y-auto pr-1 custom-scroll">
+                <!-- Packs injected via JS -->
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-white/5 text-[11px] text-gray-600 text-center leading-relaxed">
+                Tap a pack to open.<br>Drag & drop on canvas supported.
+            </div>
+        </aside>
+
+        <!-- CENTER PANEL: CANVAS & ACTIONS -->
+        <section class="flex flex-col items-center gap-6">
+            
+            <!-- Canvas Wrapper -->
+            <div class="canvas-wrapper">
+                <canvas id="studioCanvas" width="420" height="420"></canvas>
+            </div>
+
+            <!-- Primary Actions -->
+            <div class="flex items-center gap-3 w-full max-w-sm">
+                <button id="uploadAvatar" class="btn-base btn-primary flex-1">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    Upload
+                </button>
+                <button id="downloadImage" class="btn-base btn-primary flex-1">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download
+                </button>
+                <button id="clearCanvas" class="btn-base btn-glass !px-3" title="Clear All">
+                    <svg width="20" height="20" class="text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+            </div>
+            
+            <!-- Feature Spotlight & Feedback -->
+            <div class="w-full max-w-md text-center py-4 px-6 rounded-xl bg-white/5 border border-white/10 mt-2">
+                <p class="text-sm font-medium text-gray-200 mb-2">
+                    Create Assets for <span class="text-blue-400 font-bold">Any Platform</span>
+                </p>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    This powerful tool handles images of any dimension—whether it's for an X Post, Profile Picture, Header Banner, or any other need.
+                    <br>
+                    More exciting features are coming soon! Share your <span class="text-blue-300 font-medium">suggestions</span> and <span class="text-blue-300 font-medium">feedback</span> by tagging <span class="text-blue-400 font-bold">@sorabxbt</span> on X.
+                </p>
+            </div>
+
+
+            <!-- Community Slider -->
+            <div class="w-full max-w-lg slider-wrapper">
+                <h3 class="text-center text-xs text-gray-500 uppercase tracking-widest mb-4 opacity-60">Made by Community</h3>
+                <section class="cslider-root w-full overflow-hidden relative" id="circular-slider" style="--img-size:64px;">
+                    <div class="cslider-track flex gap-4 w-max" id="cslider-track"></div>
+                </section>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: TOOLS & LAYERS -->
+        <aside class="glass-panel rounded-2xl p-5 h-auto lg:h-[calc(100vh-120px)] flex flex-col">
+            
+            <!-- Inspector -->
+            <div class="mb-6">
+                <div class="flex justify-between items-end mb-4">
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Properties</h2>
+                    <span id="selInfo" class="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">NO SELECTION</span>
+                </div>
+
+                <div id="transformControls" class="space-y-4 transition-opacity duration-200 opacity-50 pointer-events-none">
+                    <div class="control-group">
+                        <div class="control-header"><span>Size</span> <span id="scaleValue">100%</span></div>
+                        <input id="scale" type="range" min="10" max="300" value="100">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-header"><span>Rotation</span> <span id="rotateValue">0°</span></div>
+                        <input id="rotate" type="range" min="-180" max="180" value="0">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-header"><span>Opacity</span> <span id="opacityValue">100%</span></div>
+                        <input id="opacity" type="range" min="0" max="100" value="100">
+                    </div>
+                </div>
+
+                <div id="eraserControls" class="hidden mt-6 pt-4 border-t border-white/10 animate-fade-in">
+                    <div class="control-header text-red-400"><span>Eraser Size</span> <span id="eraserSizeValue">50px</span></div>
+                    <input id="eraserSizeInput" type="range" min="5" max="100" value="50">
+                </div>
+            </div>
+
+            <!-- Layers -->
+            <div class="flex-grow flex flex-col overflow-hidden pt-4 border-t border-white/5">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Layers</h2>
+                    <span id="itemCount" class="text-xs text-gray-600">0</span>
+                </div>
+                <div id="layers" class="layer-list overflow-y-auto pr-1 custom-scroll flex-grow">
+                    <!-- Layers injected JS -->
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <script>
+        // ---------- DATA ----------
+        const packsData = [
+            { name:'Stars', thumbnail:'https://placehold.co/46x46/FCD34D/000000?text=%E2%98%85', stickers:[
+                'https://placehold.co/300x300/FCD34D/000000?text=STAR+1',
+                'https://placehold.co/300x300/E11D48/FFFFFF?text=STAR+2',
+                'https://placehold.co/300x300/60A5FA/FFFFFF?text=STAR+3'
+            ]},
+            { name:'Shapes', thumbnail:'https://placehold.co/46x46/34D399/000000?text=%E2%97%8F', stickers:[
+                'https://placehold.co/300x300/34D399/000000?text=SHAPE+1',
+                'https://placehold.co/300x300/FBBF24/000000?text=SHAPE+2',
+                'https://placehold.co/300x300/7C3AED/FFFFFF?text=SHAPE+3'
+            ]},
+            { name:'Goggles', thumbnail:'/mnt/data/2763b34c-c7f0-4396-a234-b3fb9f26817f.png', stickers:[
+                'https://placehold.co/300x300/4096FF/FFFFFF?text=GOGGLE+1',
+                'https://placehold.co/300x300/00FFFF/000000?text=GOGGLE+2',
+                'https://placehold.co/300x300/000000/FFFFFF?text=GOGGLE+3'
+            ]},
+            { name:'Other', thumbnail:'/mnt/data/2763b34c-c7f0-4396-a234-b3fb9f26817f.png', stickers:[
+                'https://placehold.co/300x300/94A3B8/000000?text=OTHER+1',
+                'https://placehold.co/300x300/60A5FA/FFFFFF?text=OTHER+2'
+            ] }
+        ];
+
+        // ---------- REFS ----------
+        const canvas = document.getElementById('studioCanvas');
+        const ctx = canvas.getContext('2d', { alpha:false });
+        const packsArea = document.getElementById('packsArea');
+        const layersEl = document.getElementById('layers');
+        const selInfo = document.getElementById('selInfo');
+        const itemCountEl = document.getElementById('itemCount');
+        const eraserControlsEl = document.getElementById('eraserControls');
+        const transformControlsEl = document.getElementById('transformControls');
+
+        // Inputs
+        const inputs = {
+            scale: document.getElementById('scale'),
+            rotate: document.getElementById('rotate'),
+            opacity: document.getElementById('opacity'),
+            eraser: document.getElementById('eraserSizeInput')
+        };
+        const values = {
+            scale: document.getElementById('scaleValue'),
+            rotate: document.getElementById('rotateValue'),
+            opacity: document.getElementById('opacityValue'),
+            eraser: document.getElementById('eraserSizeValue')
+        };
+
+        // Buttons
+        const btns = {
+            upload: document.getElementById('uploadAvatar'),
+            download: document.getElementById('downloadImage'),
+            clear: document.getElementById('clearCanvas')
+        };
+
+        // ---------- STATE ----------
+        let baseImg = null;
+        let items = [];
+        let selectedId = null;
+        let activeEraseLayerId = null;
+        let eraserSize = 50;
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        let dragging = false;
+        let dragOff = { x:0, y:0 };
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+        // Setup Canvas
+        function initCanvas(w,h){
+            canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+            canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+            ctx.setTransform(dpr,0,0,dpr,0,0);
+        }
+        initCanvas(420,420);
+
+        // Redraw Loop
+        function redraw(){
+            const cw = canvas.width / dpr; const ch = canvas.height / dpr;
+            ctx.clearRect(0,0,cw,ch);
+            
+            // Checkered BG fill for transparency illusion if no base image
+            if(!baseImg) {
+                // already handled by CSS bg, but we fill transparent rect to clear
+            } else {
+                const ratio = baseImg.width / baseImg.height;
+                let drawW = cw, drawH = ch, drawX = 0, drawY = 0;
+                if(cw/ch > ratio){ drawH = ch; drawW = drawH * ratio; drawX = (cw-drawW)/2; }
+                else { drawW = cw; drawH = drawW / ratio; drawY = (ch-drawH)/2; }
+                ctx.drawImage(baseImg, drawX, drawY, drawW, drawH);
+            }
+
+            items.forEach(it=>{
+                ctx.save();
+                ctx.translate(it.x, it.y);
+                ctx.rotate(it.rotation * Math.PI / 180);
+                ctx.globalAlpha = it.opacity;
+                
+                const drawW = it.w, drawH = it.h;
+                if(it.maskCanvas){
+                    // Complicated masking composition
+                    const t = document.createElement('canvas'); t.width = it.img.width; t.height = it.img.height;
+                    const tCtx = t.getContext('2d');
+                    tCtx.drawImage(it.img,0,0);
+                    tCtx.globalCompositeOperation = 'destination-in';
+                    tCtx.drawImage(it.maskCanvas,0,0,t.width,t.height);
+                    ctx.drawImage(t, -drawW/2, -drawH/2, drawW, drawH);
+                } else {
+                    ctx.drawImage(it.img, -drawW/2, -drawH/2, drawW, drawH);
+                }
+
+                // Selection Box
+                if(it.id === selectedId){
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2;
+                    ctx.strokeRect(-drawW/2, -drawH/2, drawW, drawH);
+                    // Corner handles
+                    ctx.fillStyle = 'white'; 
+                    const s = 6;
+                    ctx.fillRect(-drawW/2 -s/2, -drawH/2 -s/2, s, s);
+                    ctx.fillRect(drawW/2 -s/2, drawH/2 -s/2, s, s);
+                    ctx.fillRect(-drawW/2 -s/2, drawH/2 -s/2, s, s);
+                    ctx.fillRect(drawW/2 -s/2, -drawW/2 -s/2, s, s);
+                }
+                ctx.restore();
+            });
+
+            // Eraser Brush Preview
+            if(activeEraseLayerId !== null){
+                ctx.save();
+                ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.arc(lastX,lastY, eraserSize/2, 0, Math.PI*2); ctx.stroke();
+                ctx.restore();
+            }
+            
+            updateLayersUI();
+        }
+
+        // ---------- UI RENDER ----------
+        function renderPacksList(){
+            packsArea.innerHTML = `<div class="packs-container"></div>`;
+            const container = packsArea.querySelector('.packs-container');
+            
+            packsData.forEach(p=>{
+                const card = document.createElement('div');
+                card.className = 'pack-card';
+                card.innerHTML = `
+                    <img src="${p.thumbnail}" onerror="this.src='https://placehold.co/46x46/334155/FFFFFF?text=P'"/>
+                    <span class="pack-title">${p.name}</span>
+                `;
+                card.onclick = ()=> renderPackContent(p);
+                container.appendChild(card);
+            });
+        }
+
+        function renderPackContent(pack){
+            packsArea.innerHTML = '';
+            
+            // Navigation
+            const nav = document.createElement('div'); nav.className = 'nav-back';
+            nav.innerHTML = `<button class="btn-back"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg> Back</button> <span class="text-sm font-bold text-white ml-2">${pack.name}</span>`;
+            nav.querySelector('button').onclick = renderPacksList;
+            packsArea.appendChild(nav);
+
+            // Grid
+            const grid = document.createElement('div'); grid.className = 'sticker-grid';
+            pack.stickers.forEach(s=>{
+                const item = document.createElement('div'); item.className = 'sticker-item';
+                item.innerHTML = `<img src="${s}" onerror="this.src='https://placehold.co/100x100/334155/FFFFFF?text=S'">`;
+                item.onclick = ()=> addSticker(s);
+                grid.appendChild(item);
+            });
+            packsArea.appendChild(grid);
+        }
+
+        function updateLayersUI(){
+            layersEl.innerHTML = ''; itemCountEl.textContent = items.length;
+            
+            items.slice().reverse().forEach((it, idx)=>{
+                const realIdx = items.length - 1 - idx;
+                const isSel = it.id === selectedId;
+                const isErase = it.id === activeEraseLayerId;
+                
+                const row = document.createElement('div');
+                row.className = `layer-row ${isSel ? 'active' : ''} ${isErase ? 'erasing' : ''}`;
+                
+                row.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <img src="${it.img.src}" class="w-8 h-8 rounded bg-white/5 object-contain border border-white/10">
+                        <span class="text-sm font-medium text-gray-300 truncate w-16">Layer ${items.length - idx}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button class="btn-icon" title="Up" onclick="moveLayer(${it.id}, 1)">▲</button>
+                        <button class="btn-icon" title="Down" onclick="moveLayer(${it.id}, -1)">▼</button>
+                        <button class="btn-icon ${isErase ? 'text-red-400 bg-red-500/10' : ''}" title="Eraser" onclick="toggleEraser(${it.id})">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                        <button class="btn-icon text-red-400 hover:bg-red-500/20" title="Delete" onclick="deleteLayer(${it.id})">✕</button>
+                    </div>
+                `;
+                // Clicking row selects layer
+                row.addEventListener('click', (e)=>{
+                    if(e.target.closest('button')) return; // ignore btn clicks
+                    selectLayer(it.id);
+                });
+                layersEl.appendChild(row);
+            });
+
+            // Update Inspector State
+            const hasSel = selectedId !== null;
+            transformControlsEl.style.opacity = (hasSel && !activeEraseLayerId) ? '1' : '0.3';
+            transformControlsEl.style.pointerEvents = (hasSel && !activeEraseLayerId) ? 'auto' : 'none';
+            selInfo.textContent = hasSel ? 'SELECTED' : 'NO SELECTION';
+            
+            if(activeEraseLayerId){
+                eraserControlsEl.classList.remove('hidden');
+                selInfo.textContent = 'ERASER MODE';
+                selInfo.classList.replace('text-blue-400', 'text-red-400');
+                selInfo.classList.replace('bg-blue-500/10', 'bg-red-500/10');
+            } else {
+                eraserControlsEl.classList.add('hidden');
+                selInfo.classList.replace('text-red-400', 'text-blue-400');
+                selInfo.classList.replace('bg-red-500/10', 'bg-blue-500/10');
+            }
+        }
+
+        // ---------- LOGIC ----------
+        function addSticker(src){
+            const img = new Image(); img.crossOrigin='anonymous'; img.src = src;
+            img.onload = ()=>{
+                const id = Date.now() + Math.random();
+                const initSize = Math.min(160, img.width * 0.5);
+                
+                // Create mask canvas
+                const mC = document.createElement('canvas'); mC.width = img.width; mC.height = img.height;
+                const mCtx = mC.getContext('2d'); mCtx.fillStyle='white'; mCtx.fillRect(0,0,img.width,img.height);
+                
+                items.push({ id, img, x: (canvas.width/dpr)/2, y: (canvas.height/dpr)/2, w: initSize, h: initSize, rotation:0, opacity:1, maskCanvas: mC });
+                selectLayer(id);
+            };
+        }
+
+        function selectLayer(id){
+            activeEraseLayerId = null;
+            selectedId = id;
+            canvas.style.cursor = 'default';
+            
+            // Sync Inputs
+            const it = items.find(i=> i.id === id);
+            if(it){
+                inputs.scale.value = Math.round((it.w / it.img.width)*100);
+                inputs.rotate.value = it.rotation;
+                inputs.opacity.value = Math.round(it.opacity*100);
+                
+                values.scale.textContent = inputs.scale.value + '%';
+                values.rotate.textContent = it.rotation + '°';
+                values.opacity.textContent = inputs.opacity.value + '%';
+            }
+            redraw();
+        }
+
+        window.moveLayer = (id, dir) => {
+            const idx = items.findIndex(i=>i.id===id);
+            if(idx===-1) return;
+            const newIdx = idx+dir;
+            if(newIdx<0 || newIdx>=items.length) return;
+            const [temp] = items.splice(idx,1);
+            items.splice(newIdx,0,temp);
+            redraw();
+        };
+
+        window.deleteLayer = (id) => {
+            items = items.filter(i=>i.id!==id);
+            if(selectedId===id) selectedId=null;
+            if(activeEraseLayerId===id) activeEraseLayerId=null;
+            redraw();
+        };
+
+        window.toggleEraser = (id) => {
+            if(activeEraseLayerId === id) { selectLayer(id); }
+            else { activeEraseLayerId = id; selectedId = null; canvas.style.cursor = 'crosshair'; redraw(); }
+        };
+
+        // Inputs Events
+        inputs.scale.oninput = () => {
+            const it = items.find(i=>i.id===selectedId); if(!it) return;
+            const p = inputs.scale.value / 100;
+            it.w = it.img.width * p; it.h = it.img.height * p;
+            values.scale.textContent = inputs.scale.value + '%';
+            redraw();
+        };
+        inputs.rotate.oninput = () => {
+            const it = items.find(i=>i.id===selectedId); if(!it) return;
+            it.rotation = parseFloat(inputs.rotate.value);
+            values.rotate.textContent = it.rotation + '°';
+            redraw();
+        };
+        inputs.opacity.oninput = () => {
+            const it = items.find(i=>i.id===selectedId); if(!it) return;
+            it.opacity = parseFloat(inputs.opacity.value)/100;
+            values.opacity.textContent = inputs.opacity.value + '%';
+            redraw();
+        };
+        inputs.eraser.oninput = () => {
+            eraserSize = parseFloat(inputs.eraser.value);
+            values.eraser.textContent = eraserSize + 'px';
+            if(activeEraseLayerId) redraw();
+        };
+
+        // Canvas Interaction
+        canvas.onpointerdown = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            lastX = x; lastY = y;
+
+            // Eraser Logic
+            if(activeEraseLayerId){
+                const it = items.find(i=>i.id===activeEraseLayerId);
+                if(it){ isDrawing=true; eraseStroke(it,x,y,x,y); canvas.setPointerCapture(e.pointerId); redraw(); }
+                return;
+            }
+
+            // Selection Logic (Top-down check)
+            let hit = null;
+            for(let i=items.length-1; i>=0; i--){
+                const it = items[i];
+                // Simple rotated bounding box check
+                const dx = x - it.x; const dy = y - it.y;
+                const rad = -it.rotation * Math.PI/180;
+                const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+                const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+                if(Math.abs(lx) < it.w/2 && Math.abs(ly) < it.h/2){
+                    hit = it; break;
+                }
+            }
+
+            if(hit){
+                selectLayer(hit.id); dragging = true; dragOff = {x: x-hit.x, y: y-hit.y};
+                canvas.setPointerCapture(e.pointerId);
+            } else {
+                selectedId = null; redraw();
+            }
+        };
+
+        canvas.onpointermove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            if(activeEraseLayerId && isDrawing){
+                const it = items.find(i=>i.id===activeEraseLayerId);
+                if(it) eraseStroke(it, lastX, lastY, x, y);
+                lastX = x; lastY = y; redraw();
+            } else if(dragging && selectedId){
+                const it = items.find(i=>i.id===selectedId);
+                if(it){
+                    it.x = x - dragOff.x; it.y = y - dragOff.y;
+                    // Optional snap
+                    it.x = Math.round(it.x/2)*2; it.y = Math.round(it.y/2)*2;
+                    redraw();
+                }
+            }
+            if(activeEraseLayerId) { lastX = x; lastY = y; redraw(); }
+        };
+        
+        canvas.onpointerup = (e) => { dragging=false; isDrawing=false; redraw(); };
+
+        function eraseStroke(it, x1, y1, x2, y2){
+            if(!it.maskCanvas) return;
+            const dist = Math.hypot(x2-x1, y2-y1);
+            const steps = Math.ceil(dist/ (eraserSize/4)) || 1;
+            
+            const mCtx = it.maskCanvas.getContext('2d');
+            mCtx.save();
+            mCtx.globalCompositeOperation = 'destination-out';
+            
+            for(let i=0; i<=steps; i++){
+                const t = i/steps;
+                const cx = x1 + (x2-x1)*t; const cy = y1 + (y2-y1)*t;
+                
+                // Transform world coord to sticker local coord
+                const dx = cx - it.x; const dy = cy - it.y;
+                const rad = -it.rotation * Math.PI/180;
+                const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+                const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+                
+                // Map to image pixels
+                const scale = it.img.width / it.w;
+                const px = lx * scale + it.img.width/2;
+                const py = ly * scale + it.img.height/2;
+                
+                mCtx.beginPath();
+                mCtx.arc(px, py, (eraserSize*scale)/2, 0, Math.PI*2);
+                mCtx.fill();
+            }
+            mCtx.restore();
+        }
+
+        // Global Btns
+        btns.upload.onclick = () => {
+            const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*';
+            inp.onchange = e => {
+                const f = e.target.files[0]; if(!f) return;
+                const img = new Image(); img.src = URL.createObjectURL(f);
+                img.onload = () => {
+                    // Fit to canvas
+                    let w = img.width, h = img.height;
+                    const max = 420;
+                    if(w>max || h>max){
+                        const r = w/h;
+                        if(w>h){ w=max; h=w/r; } else { h=max; w=h*r; }
+                    }
+                    initCanvas(w,h); baseImg = img; redraw();
+                };
+            };
+            inp.click();
+        };
+
+        btns.download.onclick = () => {
+            const link = document.createElement('a');
+            link.download = 'seismic-art.png';
+            // Use a clean render canvas
+            const t = document.createElement('canvas'); t.width = canvas.width; t.height = canvas.height;
+            const tx = t.getContext('2d');
+            tx.fillStyle = '#030712'; tx.fillRect(0,0,t.width,t.height);
+            // ... (simplified download logic same as redraw but without UI helpers)
+            // Reuse redraw logic on temp canvas?
+            // For speed, just dump current canvas but remove UI
+            const oldSel = selectedId; const oldErase = activeEraseLayerId;
+            selectedId = null; activeEraseLayerId = null; redraw();
+            link.href = canvas.toDataURL();
+            link.click();
+            selectedId = oldSel; activeEraseLayerId = oldErase; redraw();
+        };
+
+        btns.clear.onclick = () => {
+            baseImg = null; items = []; selectedId = null; activeEraseLayerId = null;
+            initCanvas(420,420); redraw();
+        };
+
+        // Init
+        renderPacksList();
+        redraw();
+        
+        // Circular Slider Logic (CSS Animation based)
+        (function(){
+          const srcs = [
+             'https://placehold.co/200x200/1e293b/fff?text=Art1',
+             'https://placehold.co/200x200/2563eb/fff?text=Art2', 
+             'https://placehold.co/200x200/fcd34d/000?text=Art3',
+             'https://placehold.co/200x200/ef4444/fff?text=Art4',
+             'https://placehold.co/200x200/8b5cf6/fff?text=Art5',
+             'https://placehold.co/200x200/10b981/fff?text=Art6'
+          ];
+          const track = document.getElementById('cslider-track');
+          // Clone enough to fill width
+          const all = [...srcs, ...srcs, ...srcs]; 
+          all.forEach(s => {
+              const img = document.createElement('img');
+              img.src = s; 
+              img.className = 'w-16 h-16 rounded-lg border border-white/10 object-cover shrink-0';
+              track.appendChild(img);
+          });
+          
+          // Simple CSS Scroll Animation
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+            #cslider-track { animation: scroll 20s linear infinite; }
+          `;
+          document.head.appendChild(style);
+        })();
+
+    </script>
+</body>
+</html>
