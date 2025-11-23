@@ -255,7 +255,6 @@
 </head>
 <body class="antialiased">
 
-    <!-- STICKY HEADER -->
     <header class="fixed top-0 w-full z-30 border-b border-white/5 bg-black/40 backdrop-blur-xl">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-center md:justify-between">
             <div class="flex items-center gap-3">
@@ -273,35 +272,28 @@
         </div>
     </header>
 
-    <!-- MAIN LAYOUT -->
     <main class="pt-20 pb-8 px-4 flex-grow w-full max-w-[1500px] mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr_300px] gap-6 items-start">
 
-        <!-- LEFT PANEL: ASSETS -->
         <aside class="glass-panel rounded-2xl p-5 h-[500px] lg:h-[calc(100vh-120px)] flex flex-col">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Library</h2>
                 <span class="text-[10px] bg-white/5 px-2 py-0.5 rounded text-gray-400">Free</span>
             </div>
             
-            <!-- Pack Content Area -->
             <div id="packsArea" class="flex-grow overflow-y-auto pr-1 custom-scroll">
-                <!-- Packs injected via JS -->
-            </div>
+                </div>
 
             <div class="mt-4 pt-4 border-t border-white/5 text-[11px] text-gray-600 text-center leading-relaxed">
                 Tap a pack to open.<br>Drag & drop on canvas supported.
             </div>
         </aside>
 
-        <!-- CENTER PANEL: CANVAS & ACTIONS -->
         <section class="flex flex-col items-center gap-6">
             
-            <!-- Canvas Wrapper -->
             <div class="canvas-wrapper">
                 <canvas id="studioCanvas" width="420" height="420"></canvas>
             </div>
 
-            <!-- Primary Actions -->
             <div class="flex items-center gap-3 w-full max-w-sm">
                 <button id="uploadAvatar" class="btn-base btn-primary flex-1">
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
@@ -316,7 +308,6 @@
                 </button>
             </div>
             
-            <!-- Feature Spotlight & Feedback -->
             <div class="w-full max-w-md text-center py-4 px-6 rounded-xl bg-white/5 border border-white/10 mt-2">
                 <p class="text-sm font-medium text-gray-200 mb-2">
                     Create Assets for <span class="text-blue-400 font-bold">Any Platform</span>
@@ -329,7 +320,6 @@
             </div>
 
 
-            <!-- Community Slider -->
             <div class="w-full max-w-lg slider-wrapper">
                 <h3 class="text-center text-xs text-gray-500 uppercase tracking-widest mb-4 opacity-60">Made by Community</h3>
                 <section class="cslider-root w-full overflow-hidden relative" id="circular-slider" style="--img-size:64px;">
@@ -338,10 +328,8 @@
             </div>
         </section>
 
-        <!-- RIGHT PANEL: TOOLS & LAYERS -->
         <aside class="glass-panel rounded-2xl p-5 h-auto lg:h-[calc(100vh-120px)] flex flex-col">
             
-            <!-- Inspector -->
             <div class="mb-6">
                 <div class="flex justify-between items-end mb-4">
                     <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Properties</h2>
@@ -369,42 +357,56 @@
                 </div>
             </div>
 
-            <!-- Layers -->
             <div class="flex-grow flex flex-col overflow-hidden pt-4 border-t border-white/5">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Layers</h2>
                     <span id="itemCount" class="text-xs text-gray-600">0</span>
                 </div>
                 <div id="layers" class="layer-list overflow-y-auto pr-1 custom-scroll flex-grow">
-                    <!-- Layers injected JS -->
-                </div>
+                    </div>
             </div>
         </aside>
 
     </main>
 
     <script>
-        // ---------- DATA ----------
+        // ---------- DATA (Updated with Distinct Thumbnails) ----------
         const packsData = [
-            { name:'Hats', thumbnail:'https://placehold.co/46x46/FCD34D/000000?text=%E2%98%85', stickers:[
-                'https://placehold.co/300x300/FCD34D/000000?text=STAR+1',
-                'https://placehold.co/300x300/E11D48/FFFFFF?text=STAR+2',
-                'https://placehold.co/300x300/60A5FA/FFFFFF?text=STAR+3'
-            ]},
-            { name:'Masks', thumbnail:'https://placehold.co/46x46/34D399/000000?text=%E2%97%8F', stickers:[
-                'https://placehold.co/300x300/34D399/000000?text=SHAPE+1',
-                'https://placehold.co/300x300/FBBF24/000000?text=SHAPE+2',
-                'https://placehold.co/300x300/7C3AED/FFFFFF?text=SHAPE+3'
-            ]},
-            { name:'Goggles', thumbnail:'/mnt/data/2763b34c-c7f0-4396-a234-b3fb9f26817f.png', stickers:[
-                'https://placehold.co/300x300/4096FF/FFFFFF?text=GOGGLE+1',
-                'https://placehold.co/300x300/00FFFF/000000?text=GOGGLE+2',
-                'https://placehold.co/300x300/000000/FFFFFF?text=GOGGLE+3'
-            ]},
-            { name:'Other', thumbnail:'/mnt/data/2763b34c-c7f0-4396-a234-b3fb9f26817f.png', stickers:[
-                'https://placehold.co/300x300/94A3B8/000000?text=OTHER+1',
-                'https://placehold.co/300x300/60A5FA/FFFFFF?text=OTHER+2'
-            ] }
+            { 
+                name:'Hats', 
+                thumbnail:'https://placehold.co/100x100/eab308/ffffff?text=HAT', 
+                stickers:[
+                    'https://placehold.co/300x300/FCD34D/000000?text=STAR+1',
+                    'https://placehold.co/300x300/E11D48/FFFFFF?text=STAR+2',
+                    'https://placehold.co/300x300/60A5FA/FFFFFF?text=STAR+3'
+                ]
+            },
+            { 
+                name:'Masks', 
+                thumbnail:'https://placehold.co/100x100/22c55e/ffffff?text=MASK', 
+                stickers:[
+                    'https://placehold.co/300x300/34D399/000000?text=SHAPE+1',
+                    'https://placehold.co/300x300/FBBF24/000000?text=SHAPE+2',
+                    'https://placehold.co/300x300/7C3AED/FFFFFF?text=SHAPE+3'
+                ]
+            },
+            { 
+                name:'Goggles', 
+                thumbnail:'https://placehold.co/100x100/3b82f6/ffffff?text=GOGGLE', 
+                stickers:[
+                    'https://placehold.co/300x300/4096FF/FFFFFF?text=GOGGLE+1',
+                    'https://placehold.co/300x300/00FFFF/000000?text=GOGGLE+2',
+                    'https://placehold.co/300x300/000000/FFFFFF?text=GOGGLE+3'
+                ]
+            },
+            { 
+                name:'Other', 
+                thumbnail:'https://placehold.co/100x100/a855f7/ffffff?text=OTHER', 
+                stickers:[
+                    'https://placehold.co/300x300/94A3B8/000000?text=OTHER+1',
+                    'https://placehold.co/300x300/60A5FA/FFFFFF?text=OTHER+2'
+                ] 
+            }
         ];
 
         // ---------- REFS ----------
@@ -520,7 +522,7 @@
             updateLayersUI();
         }
 
-        // ---------- UI RENDER ----------
+        // ---------- UI RENDER (UPDATED to use dynamic thumbnails) ----------
         function renderPacksList(){
             packsArea.innerHTML = `<div class="packs-container"></div>`;
             const container = packsArea.querySelector('.packs-container');
@@ -528,8 +530,9 @@
             packsData.forEach(p=>{
                 const card = document.createElement('div');
                 card.className = 'pack-card';
+                // FIX: Use p.thumbnail instead of hardcoded URL
                 card.innerHTML = `
-                    <img src="https://raw.githubusercontent.com/sorabxbt/Seismic-pfp-tool/main/images/cap-icon-design-free-vector.jpg">
+                    <img src="${p.thumbnail}" onerror="this.src='https://placehold.co/48x48'">
                     <span class="pack-title">${p.name}</span>
                 `;
                 card.onclick = ()=> renderPackContent(p);
@@ -858,8 +861,4 @@
 
     </script>
 </body>
-
 </html>
-
-
-
