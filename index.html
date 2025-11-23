@@ -156,7 +156,7 @@
             box-shadow: 0 10px 20px -5px rgba(0,0,0,0.5);
         }
         .pack-card img {
-            width: 48px; height: 48px; object-fit: contain;
+            width: 80px; height: 80px; object-fit: contain;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
             transition: transform 0.3s ease;
         }
@@ -252,6 +252,16 @@
         @media (max-width: 1024px) { .packs-container { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 640px) { .packs-container { grid-template-columns: repeat(2, 1fr); } }
     </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
 </head>
 <body class="antialiased">
 
@@ -281,7 +291,14 @@
             </div>
             
             <div id="packsArea" class="flex-grow overflow-y-auto pr-1 custom-scroll">
-                </div>
+            </div>
+
+            <div class="mt-3">
+                <button id="uploadLayerBtn" class="w-full btn-base btn-glass text-xs py-3 justify-center border-dashed border-white/20 hover:border-white/40 hover:bg-white/5">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    Upload Own Sticker
+                </button>
+            </div>
 
             <div class="mt-4 pt-4 border-t border-white/5 text-[11px] text-gray-600 text-center leading-relaxed">
                 Tap a pack to open.<br>Drag & drop on canvas supported.
@@ -436,6 +453,7 @@
         // Buttons
         const btns = {
             upload: document.getElementById('uploadAvatar'),
+            uploadLayer: document.getElementById('uploadLayerBtn'),
             download: document.getElementById('downloadImage'),
             clear: document.getElementById('clearCanvas')
         };
@@ -804,6 +822,18 @@
             inp.click();
         };
 
+        if (btns.uploadLayer) {
+            btns.uploadLayer.onclick = () => {
+                const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*';
+                inp.onchange = e => {
+                    const f = e.target.files[0]; if(!f) return;
+                    const url = URL.createObjectURL(f);
+                    addSticker(url);
+                };
+                inp.click();
+            };
+        }
+
         btns.download.onclick = () => {
             const link = document.createElement('a');
             link.download = 'seismic-art.png';
@@ -862,6 +892,3 @@
     </script>
 </body>
 </html>
-
-
-
